@@ -32,6 +32,7 @@ public class Teacher extends AbstractEntity {
     @JoinColumn(name = "personal_info_id")
     private PersonalInfo personalInfo;
 
+    //
     @PrePersist
     public void initializeUUID() {
         if (uuid == null) uuid = UUID.randomUUID().toString();

@@ -23,6 +23,8 @@ public class PersonalInfo extends AbstractEntity {
     @JoinColumn(name = "amka_file_id")
     private Attachment amkaFile;
 
+
+    // we dont want the amkaFile in this occasion
     public PersonalInfo(Long id, String  amka, String identityNumber,
                         String placeOfBirth, String municipalityOfRegistration) {
         this.id = id;
