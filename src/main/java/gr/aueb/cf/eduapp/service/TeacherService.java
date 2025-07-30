@@ -2,6 +2,9 @@ package gr.aueb.cf.eduapp.service;
 
 import gr.aueb.cf.eduapp.core.enums.exceptions.AppObjectAlreadyExists;
 import gr.aueb.cf.eduapp.core.enums.exceptions.AppObjectInvalidArgumentException;
+import gr.aueb.cf.eduapp.core.filters.Paginated;
+import gr.aueb.cf.eduapp.core.filters.TeacherFilters;
+import gr.aueb.cf.eduapp.core.specifications.TeacherSpecification;
 import gr.aueb.cf.eduapp.dto.PersonalInfoInsertDTO;
 import gr.aueb.cf.eduapp.dto.TeacherInsertDTO;
 import gr.aueb.cf.eduapp.dto.TeacherReadOnlyDTO;
@@ -19,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -88,6 +92,15 @@ public class TeacherService implements ITeacherService{
         return teacherRepository.findAll(pageable).map(mapper::mapToTeacherReadOnlyDTO);
     }
 
+    @Override
+    public Paginated<TeacherReadOnlyDTO> getTeachersFilteredPaginated(TeacherFilters teacherFilters) {
+        var filtered =teacherRepository.findAll(getSpecsFromFilters(teacherFilters), teacherFilters.getPageable());
+        log.debug("Filtered and paginated tachers were returned successfully with page={} amd size={}",
+                teacherFilters.getPage(),teacherFilters.getPageSize());
+
+        return new Paginated<>(filtered.map(mapper::mapToTeacherReadOnlyDTO));
+    }
+
     private void saveAmkaFile(PersonalInfo personalInfo, MultipartFile amkaFile) throws IOException {
         if(amkaFile == null || !amkaFile.isEmpty()) {
 
@@ -118,5 +131,12 @@ public class TeacherService implements ITeacherService{
         }
         return "";
 
+    }
+
+    private Specification<Teacher> getSpecsFromFilters(TeacherFilters teacherFilters) {
+        return TeacherSpecification.trStringFieldLike("uuid", teacherFilters.getUuid())
+                .and(TeacherSpecification.teacherUserVatIs(teacherFilters.getUserVat()))
+                .and(TeacherSpecification.trPersonalInfoAmkaIs(teacherFilters.getUserAmka()))
+                .and(TeacherSpecification.trUserIsActive(teacherFilters.getActive()));
     }
 }
