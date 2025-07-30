@@ -24,7 +24,7 @@ public class Teacher extends AbstractEntity {
     @ColumnDefault("true")  // creates default value on the database
     private Boolean isActive;
 
-    @OneToOne(cascade = CascadeType.ALL)  // inserting user will insert teacher and vice versa (on service we dont have to save both)
+    @OneToOne(cascade = CascadeType.ALL)  // inserting userInsertDTO will insert teacher and vice versa (on service we dont have to save both)
     @JoinColumn(name = "user_id")
     private User user;
 
