@@ -1,7 +1,7 @@
 package gr.aueb.cf.eduapp.service;
 
-import gr.aueb.cf.eduapp.core.enums.exceptions.AppObjectAlreadyExists;
-import gr.aueb.cf.eduapp.core.enums.exceptions.AppObjectInvalidArgumentException;
+import gr.aueb.cf.eduapp.core.exceptions.AppObjectAlreadyExists;
+import gr.aueb.cf.eduapp.core.exceptions.AppObjectInvalidArgumentException;
 import gr.aueb.cf.eduapp.core.filters.Paginated;
 import gr.aueb.cf.eduapp.core.filters.TeacherFilters;
 import gr.aueb.cf.eduapp.dto.TeacherInsertDTO;

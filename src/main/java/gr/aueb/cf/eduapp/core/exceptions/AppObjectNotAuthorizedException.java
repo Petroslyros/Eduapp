@@ -1,4 +1,4 @@
-package gr.aueb.cf.eduapp.core.enums.exceptions;
+package gr.aueb.cf.eduapp.core.exceptions;
 
 public class AppObjectNotAuthorizedException extends AppGenericException {
 
