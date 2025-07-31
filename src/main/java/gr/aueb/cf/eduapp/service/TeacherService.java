@@ -35,78 +35,90 @@ import java.util.UUID;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TeacherService implements ITeacherService{
+public class TeacherService implements ITeacherService {
 
     private final TeacherRepository teacherRepository;
     private final UserRepository userRepository;
     private final PersonalInfoRepository personalInfoRepository;
     private final Mapper mapper;
 
-
+    /**
+     * Saves a new Teacher with validation and optional file upload.
+     */
     @Override
     @Transactional(rollbackOn = Exception.class)
-    public TeacherReadOnlyDTO saveTeacher(TeacherInsertDTO teacherInsertDTO, MultipartFile amkaFile) throws AppObjectAlreadyExists, AppObjectInvalidArgumentException, IOException {
+    public TeacherReadOnlyDTO saveTeacher(TeacherInsertDTO teacherInsertDTO, MultipartFile amkaFile)
+            throws AppObjectAlreadyExists, AppObjectInvalidArgumentException, IOException {
 
-        if(userRepository.findByVat(teacherInsertDTO.userInsertDTO().vat()).isPresent()) {
-            throw new AppObjectAlreadyExists("VAT", "Personal info with VAT " + teacherInsertDTO.userInsertDTO().vat() +
-                    "already exists");
+        // Check for VAT duplication
+        if (userRepository.findByVat(teacherInsertDTO.userInsertDTO().vat()).isPresent()) {
+            throw new AppObjectAlreadyExists("VAT", "Personal info with VAT already exists");
         }
 
-        if(userRepository.findByVat(teacherInsertDTO.personalInfoInsertDTO().amka()).isPresent()) {
-            throw new AppObjectAlreadyExists("AMKA", "Personal info with AMKA " + teacherInsertDTO.personalInfoInsertDTO().amka() +
-                    "already exists");
+        // Check for AMKA duplication
+        if (userRepository.findByVat(teacherInsertDTO.personalInfoInsertDTO().amka()).isPresent()) {
+            throw new AppObjectAlreadyExists("AMKA", "Personal info with AMKA already exists");
         }
 
-        if(userRepository.findByVat(teacherInsertDTO.userInsertDTO().username()).isPresent()) {
-            throw new AppObjectAlreadyExists("Username", "User info with Username " + teacherInsertDTO.userInsertDTO().username() +
-                    "already exists");
+        // Check for username duplication
+        if (userRepository.findByVat(teacherInsertDTO.userInsertDTO().username()).isPresent()) {
+            throw new AppObjectAlreadyExists("Username", "Username already exists");
         }
 
-        if(personalInfoRepository.findByIdentityNumber(teacherInsertDTO.personalInfoInsertDTO().identityNumber()).isPresent()) {
-            throw new AppObjectAlreadyExists("Identity", "User with identity number " + teacherInsertDTO.personalInfoInsertDTO().identityNumber() +
-                    "already exists");
+        // Check for identity number duplication
+        if (personalInfoRepository.findByIdentityNumber(teacherInsertDTO.personalInfoInsertDTO().identityNumber()).isPresent()) {
+            throw new AppObjectAlreadyExists("Identity", "User with identity number already exists");
         }
 
+        // Convert DTO to Entity
         Teacher teacher = mapper.mapToTeacherEntity(teacherInsertDTO);
 
-        if(amkaFile != null && !amkaFile.isEmpty()) {
-          //   saveAmkaFIle(teacher.getPersonalInfo(), amkaFile);
+        // Save AMKA file if provided
+        if (amkaFile != null && !amkaFile.isEmpty()) {
+            // saveAmkaFile(teacher.getPersonalInfo(), amkaFile); // Uncomment if file upload logic is needed
         }
 
-        // Saves teacher (cascades to User and PersonalInfo)
+        // Save to DB
         Teacher savedTeacher = teacherRepository.save(teacher);
         log.info("Teacher with amka={} saved.", teacherInsertDTO.personalInfoInsertDTO().amka());
 
+        // Convert back to DTO to return
         return mapper.mapToTeacherReadOnlyDTO(savedTeacher);
-
-
-
     }
 
+    /**
+     * Returns paginated teachers (without filtering).
+     */
     @Override
     public Page<TeacherReadOnlyDTO> getPaginatedTeachers(int page, int size) {
         String defaultSort = "id";
-        Pageable pageable = PageRequest.of(page,size, Sort.by(defaultSort).ascending());
-        log.debug("Paginated teachers were returned successfully with page={} and size={} ", page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(defaultSort).ascending());
 
-        return teacherRepository.findAll(pageable).map(mapper::mapToTeacherReadOnlyDTO);
+        log.debug("Paginated teachers returned with page={} and size={}", page, size);
+
+        return teacherRepository.findAll(pageable)
+                .map(mapper::mapToTeacherReadOnlyDTO);
     }
 
+    /**
+     * Returns filtered + paginated teachers based on filter criteria.
+     */
     @Override
     public Paginated<TeacherReadOnlyDTO> getTeachersFilteredPaginated(TeacherFilters teacherFilters) {
-        var filtered =teacherRepository.findAll(getSpecsFromFilters(teacherFilters), teacherFilters.getPageable());
-        log.debug("Filtered and paginated tachers were returned successfully with page={} amd size={}",
-                teacherFilters.getPage(),teacherFilters.getPageSize());
+        var filtered = teacherRepository.findAll(getSpecsFromFilters(teacherFilters), teacherFilters.getPageable());
+
+        log.debug("Filtered teachers returned with page={} and size={}", teacherFilters.getPage(), teacherFilters.getPageSize());
 
         return new Paginated<>(filtered.map(mapper::mapToTeacherReadOnlyDTO));
     }
 
+    /**
+     * Saves the uploaded AMKA file to the disk and associates it with the teacher's personal info.
+     */
     private void saveAmkaFile(PersonalInfo personalInfo, MultipartFile amkaFile) throws IOException {
-        if(amkaFile == null || !amkaFile.isEmpty()) {
-
+        if (amkaFile == null || !amkaFile.isEmpty()) {
             String originalFileName = amkaFile.getOriginalFilename();
             String savedName = UUID.randomUUID().toString() + getFileExtension(originalFileName);
-
             String uploadDirectory = "uploads/";
             Path filePath = Paths.get(uploadDirectory + savedName);
 
@@ -121,18 +133,23 @@ public class TeacherService implements ITeacherService{
             attachment.setExtension(getFileExtension(originalFileName));
 
             personalInfo.setAmkaFile(attachment);
-            log.info("Attachment for teacher with Amka={} saved", personalInfo.getAmka());
+            log.info("Attachment for teacher with AMKA={} saved", personalInfo.getAmka());
         }
     }
-    private String getFileExtension(String filename) {
-        if(filename != null && filename.contains(".")) {
-            return filename.substring(filename.lastIndexOf("."));
 
+    /**
+     * Extracts file extension from filename.
+     */
+    private String getFileExtension(String filename) {
+        if (filename != null && filename.contains(".")) {
+            return filename.substring(filename.lastIndexOf("."));
         }
         return "";
-
     }
 
+    /**
+     * Creates Specification object to be used in filtered queries.
+     */
     private Specification<Teacher> getSpecsFromFilters(TeacherFilters teacherFilters) {
         return TeacherSpecification.trStringFieldLike("uuid", teacherFilters.getUuid())
                 .and(TeacherSpecification.teacherUserVatIs(teacherFilters.getUserVat()))
