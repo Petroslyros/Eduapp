@@ -17,29 +17,21 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    //    private String secretKey = System.getenv("SECRET_KEY");
-    //    in linux-based, git-bash: openssl rand -base64 32 ή 48
-    //  Strong security 384-bits = 48 bytes = 64 Base64URL characters
-    //  private String secretKey = "5ce98d378ec88ea09ba8bcd511ef23645f04cc8e70b9134b98723a53c275bbc5";
-
-    //    private String secretKey = "FvArDZiJ1hvR9k3Ks1J6s8FqbmL6rRnlmTL5J3jNiT8";
     @Value("${app.security.secret-key}")
-    private String secretKey;
+    private String secretKey; // A base64-encoded secret used to sign tokens
 
-
-    //  private long jwtExpiration = 10800000;  // 3 hours in milliseconds
     @Value("${app.security.jwt-expiration}")
-    private long jwtExpiration;
+    private long jwtExpiration; // How long the JWT should be valid (in milliseconds)
 
-//    if use refresh expiration token
-//    private long refreshExpiration = 604800000;
-
+    /**
+     * Generates a JWT with the username as the subject and includes the user's role in the payload.
+     */
     public String generateToken(String username, String role) {
         var claims = new HashMap<String, Object>();
         claims.put("role", role);
-        return Jwts
-                .builder()
-                .setIssuer("self") // todo
+
+        return Jwts.builder()
+                .setIssuer("self") // Just an example value
                 .setClaims(claims)
                 .setSubject(username)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
@@ -48,6 +40,9 @@ public class JwtService {
                 .compact();
     }
 
+    /**
+     * Validates the JWT: checks that the username matches and that the token hasn't expired.
+     */
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String subject = extractSubject(token);
         return (subject.equals(userDetails.getUsername())) && !isTokenExpired(token);
@@ -74,9 +69,11 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    /**
+     * Extracts all claims (like subject, role, expiration, etc.) from a token.
+     */
     private Claims extractAllClaims(String token) {
-        return Jwts
-                .parserBuilder()
+        return Jwts.parserBuilder()
                 .setSigningKey(getSignInKey())
                 .build()
                 .parseClaimsJws(token)
@@ -84,12 +81,7 @@ public class JwtService {
     }
 
     /**
-     * Creates a HS256 Key. Key is an interface.
-     * Starting from secretKey we get a byte array
-     * of the secret. Then we get the {@link javax.crypto.SecretKey,
-     * class that implements the {@link Key } interface.
-     *
-     * @return  a SecretKey which implements Key.
+     * Converts the base64 secret key into an HMAC-SHA key for signing JWTs.
      */
     private Key getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
