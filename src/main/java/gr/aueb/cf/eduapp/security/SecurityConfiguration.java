@@ -38,7 +38,7 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authenticationProvider) throws Exception {
-        http
+        return http
                 .cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req
@@ -54,9 +54,9 @@ public class SecurityConfiguration {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling((exceptions) -> exceptions
                         .authenticationEntryPoint(myCustomAuthenticationEntryPoint())
-                        .accessDeniedHandler(myCustomAccessDeniedHandler()));
+                        .accessDeniedHandler(myCustomAccessDeniedHandler())).build();
 
-        return http.build();
+
     }
 
 

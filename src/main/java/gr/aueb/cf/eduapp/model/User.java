@@ -97,6 +97,6 @@ public class User extends AbstractEntity implements UserDetails { // PRINCIPAL
 
     @Override
     public boolean isEnabled() {
-        return this.getIsActive() == null || this.getIsActive();
+        return true;
     }
 }
