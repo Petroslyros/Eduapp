@@ -4,13 +4,19 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
 @Builder
-public record TeacherInsertDTO(
+public record TeacherUpdateDTO(
+        @NotNull(message = "id field is required")
+        Long id,
+
         @NotNull(message = "isActive field is required")
         Boolean isActive,
 
+        @NotNull(message = "uuid field is required")
+        String uuid,
+
         @NotNull(message = "User details are required")
-        UserInsertDTO userInsertDTO,
+        UserUpdateDTO userUpdateDTO,
 
         @NotNull(message = "Personal Info is required")
-        PersonalInfoInsertDTO personalInfoInsertDTO
+        PersonalInfoUpdateDTO personalInfoUpdateDTO
 ) {}
