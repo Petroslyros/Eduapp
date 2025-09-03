@@ -1,46 +1,79 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.4'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'jacoco'
+    id 'org.springframework.boot' version '3.5.4'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'gr.aueb.cf'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+        vendor = JvmVendorSpec.AMAZON
+    }
+}
 
-		languageVersion = JavaLanguageVersion.of(17)
-		vendor = JvmVendorSpec.AMAZON
-	}
+jacoco {
+    toolVersion = "0.8.11" // latest stable version
+}
+
+jacocoTestReport {
+    dependsOn test // tests are run before generating report. For manual execution
+    reports {
+        xml.required = true		// XML report για CI tools
+        csv.required = false	// CSV συνήθως όχι απαραίτητο
+        html.required = true	// HTML report για developers
+    }
+}
+
+bootJar {
+    archiveFileName = "eduapp.jar"  // Forces the output JAR name
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+    testCompileOnly {
+        extendsFrom testAnnotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	annotationProcessor 'org.projectlombok:lombok'
-	compileOnly 'org.projectlombok:lombok'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-	runtimeOnly 'com.mysql:mysql-connector-j'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'com.h2database:h2'			// in-memory DB for Repository tests
 
-	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    runtimeOnly 'com.mysql:mysql-connector-j'
 
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+//	compileOnly 'org.projectlombok:lombok' redundant if compileOnly.extendsFrom has been defined
+    annotationProcessor 'org.projectlombok:lombok'
+//	testCompileOnly 'org.projectlombok:lombok:1.18.30' redundant if testCompileOnly.extendsFrom has been defined
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'net.datafaker:datafaker:2.3.1'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 
-
+//	implementation 'org.flywaydb:flyway-core'
 }
 
-tasks.named('test') {
-	useJUnitPlatform()
+tasks.named('test', Test) {	// Gradle Test class implements 'test' task, it is default if missed
+    useJUnitPlatform()					// Configures the test task to use JUnit 5 engine to run the tests
+    finalizedBy(jacocoTestReport)		// after 'test' task, jacoco will run και αυτόματο report μετά test
 }
