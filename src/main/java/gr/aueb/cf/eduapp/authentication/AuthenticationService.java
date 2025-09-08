@@ -22,7 +22,7 @@ public class AuthenticationService {
         // This performs the actual authentication step.
         // If the credentials are wrong, an exception is thrown here.
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword())
+                new UsernamePasswordAuthenticationToken(dto.username(), dto.password())
         );
 
         // Gets the authenticated user (Spring Security stores it as the principal)

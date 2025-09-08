@@ -55,16 +55,17 @@ public class TeacherRestController {
                     @ApiResponse(
                             responseCode = "400", description = "Validation error",
                             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseMessageDTO.class))
-                    ),
-                    @ApiResponse(
-                            responseCode = "401", description = "Unauthorized",
-                            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseMessageDTO.class)
-                            )
-                    ),
-                    @ApiResponse(
-                            responseCode = "403", description = "Access Denied",
-                            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseMessageDTO.class))
                     )
+//                    ,
+//                    @ApiResponse(
+//                            responseCode = "401", description = "Unauthorized",
+//                            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseMessageDTO.class)
+//                            )
+//                    ),
+//                    @ApiResponse(
+//                            responseCode = "403", description = "Access Denied",
+//                            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseMessageDTO.class))
+//                    )
             }
     )
     @PostMapping(value = "/teachers")
@@ -220,7 +221,7 @@ public class TeacherRestController {
                             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseMessageDTO.class))
                     ),
                     @ApiResponse(
-                            responseCode = "401", description = "Unauthorized",
+                            responseCode = "401", description = "Not Authenticated",
                             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseMessageDTO.class))
                     ),
                     @ApiResponse(

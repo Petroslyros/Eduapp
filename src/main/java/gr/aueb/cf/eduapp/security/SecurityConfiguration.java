@@ -1,9 +1,9 @@
 package gr.aueb.cf.eduapp.security;
 
-//import gr.aueb.cf.eduapp.authentication.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -33,37 +33,43 @@ import static org.springframework.security.config.http.SessionCreationPolicy.STA
 @RequiredArgsConstructor
 @EnableMethodSecurity
 public class SecurityConfiguration {
-    private final UserDetailsService userDetailsService;
+
     private final JwtAuthenticationFilter jwtAuthFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authenticationProvider) throws Exception {
-        return http
+        http
                 .cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req
-                                .requestMatchers("/api/teachers").permitAll()       //register
-                                .requestMatchers("/api/auth/authenticate").permitAll()
-                                .requestMatchers("/api/teachers/**").hasAnyAuthority(Role.TEACHER.name(), Role.SUPER_ADMIN.name())
-                                .requestMatchers("/api/employess/**").hasAuthority(Role.EMPLOYEE.name())
-                                .requestMatchers("/**").authenticated()
-                        //.authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/teachers").permitAll()           // register
+                        .requestMatchers("/api/auth/authenticate").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui.html",        // The old Swagger UI HTML (if used)
+                                "/swagger-ui/**",          // All Swagger UI resources (JS, CSS, etc.)
+                                "/v3/api-docs/**",         // The API JSON docs
+                                "/v3/api-docs.yaml",       // YAML version of the docs
+                                "/swagger-resources/**",   // Swagger resource descriptors
+                                "/configuration/**"        // Swagger configuration endpoints
+                        ).permitAll()
+                        .requestMatchers("/api/teachers/**").hasAnyRole("SUPER_ADMIN", "TEACHER")
+                        .requestMatchers("/api/employess/**").hasRole("EMPLOYEE")
+                        .requestMatchers("/**").authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling((exceptions) -> exceptions
                         .authenticationEntryPoint(myCustomAuthenticationEntryPoint())
-                        .accessDeniedHandler(myCustomAccessDeniedHandler())).build();
+                        .accessDeniedHandler(myCustomAccessDeniedHandler()));
 
-
+        return http.build();
     }
-
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("https://coding-factory.apps.gov.gr", "https://test-coding-factory.apps.gov.gr" , "http://localhost:3000",  "http://localhost:4200", "http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("https://coding-factory.apps.gov.gr", "http://localhost:3000", "http://localhost:5173"));
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);        // to allow Authorization header, otherwise browser blocks the Authorization header
@@ -72,14 +78,13 @@ public class SecurityConfiguration {
         return source;
     }
 
-
-@Bean
-public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
-                                                     PasswordEncoder passwordEncoder) {
-    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-    authProvider.setPasswordEncoder(passwordEncoder);
-    return authProvider;
-}
+    @Bean
+    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
+                                                         PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder);
+        return authProvider;
+    }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -91,12 +96,10 @@ public AuthenticationProvider authenticationProvider(UserDetailsService userDeta
         return new BCryptPasswordEncoder(12);
     }
 
-    // custom handlers for Spring Security's unauthorized (401) and forbidden (403) responses.
-
     // AccessDeniedHandler (Handles 403 Forbidden)
-    // triggered when an authenticated user tries to access a resource they don’t have permissions for.
-    // returns HTTP 403 Forbidden with a basic error page.
-    // want to return a consistent JSON response (common in REST APIs):
+    // Triggered when an authenticated user tries to access a resource they don’t have permissions for.
+    // Returns HTTP 403 Forbidden with a basic error page.
+    // Want to return a consistent JSON response (common in REST APIs):
     @Bean
     public AccessDeniedHandler myCustomAccessDeniedHandler() {
         return new CustomAccessDeniedHandler();
@@ -105,7 +108,7 @@ public AuthenticationProvider authenticationProvider(UserDetailsService userDeta
     // AuthenticationEntryPoint (Handles 401 Unauthorized)
     // Triggered when an unauthenticated user tries to access a secured resource.
     // Default behavior: Redirects to login page (for web apps) or returns HTTP 401 (for APIs).
-    // want retrn to a structured JSON response for APIs:
+    // Want to return to a structured JSON response for APIs:
     @Bean
     public AuthenticationEntryPoint myCustomAuthenticationEntryPoint() {
         return new CustomAuthenticationEntryPoint();
